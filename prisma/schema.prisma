@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Section {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  name         String
+  description  String
+  icon         String    @default("Package")
+  image        String?
+  displayOrder Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  forms        Form[]
+  requests     Request[]
+}
+
+model Form {
+  id               String       @id @default(cuid())
+  sectionId        String
+  slug             String
+  name             String
+  description      String?
+  icon             String?
+  submitButtonText String       @default("SUBMIT REQUEST")
+  whatsappFormat   String?
+  displayOrder     Int          @default(0)
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  section          Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  fields           FormField[]
+  requests         Request[]
+
+  @@unique([sectionId, slug])
+}
+
+model FormField {
+  id           String   @id @default(cuid())
+  formId       String
+  label        String
+  fieldName    String
+  fieldType    String   @default("text") // text, number, phone, email, textarea, dropdown, radio, checkbox, date, time
+  placeholder  String?
+  defaultValue String?
+  isRequired   Boolean  @default(true)
+  options      String?  // JSON string or comma-separated options for dropdown/radio/checkbox
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  form         Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+}
+
+model Request {
+  id              String         @id @default(cuid())
+  requestId       String         @unique // e.g. HH-20261002-0001
+  sectionId       String
+  formId          String
+  studentName     String?
+  contactNumber   String?
+  status          String         @default("PENDING") // PENDING, PROCESSING, COMPLETED, CANCELLED
+  additionalNotes String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  section         Section        @relation(fields: [sectionId], references: [id])
+  form            Form           @relation(fields: [formId], references: [id])
+  values          RequestValue[]
+}
+
+model RequestValue {
+  id         String   @id @default(cuid())
+  requestId  String
+  fieldLabel String
+  fieldName  String
+  value      String
+  request    Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
